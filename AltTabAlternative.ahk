@@ -1,4 +1,4 @@
-/*
+﻿/*
 o-----------------------------------------------------------------------------o
 |   Author : Lokesh Govindu                                                   |
 |    Email : lokeshgovindu@gmail.com                                          |
@@ -1376,8 +1376,10 @@ InitializeDefaults:
     ; the AltTabAlternative window with changes without restarting
     ; the application.
     ; -----------------------------------------------------------------------------
-    WindowWidth     := A_ScreenWidth * WindowWidthPercentage * 0.01
-    WindowHeightMax := A_ScreenHeight * WindowHeightMaxPercentage * 0.01
+    MouseMonitorNo := MouseGetMonitor()
+    SysGet, Mon, Monitor, %MouseMonitorNo%
+    WindowWidth     := (MonRight - MonLeft) * WindowWidthPercentage * 0.01
+    WindowHeightMax := (MonBottom - MonTop) * WindowHeightMaxPercentage * 0.01
     PrintKV("WindowWidth", WindowWidth)
     PrintKV("WindowHeightMax", WindowHeightMax)    
 Return
@@ -1388,7 +1390,7 @@ Return
 ; -----------------------------------------------------------------------------
 CreateWindow:
     PrintSub("CreateWindow")
-    Gui, 1: +AlwaysOnTop +ToolWindow -Caption +HwndMainWindowHwnd +Border -SysMenu
+    Gui, 1: -DPIScale +AlwaysOnTop +ToolWindow -Caption +HwndMainWindowHwnd +Border -SysMenu
     Gui, 1: Margin, 0, 0
 
     Gui, 1: Font, s%SearchStringFontSize% c%SearchStringFontColor% %SearchStringFontStyle%, %SearchStringFontName%
@@ -1426,8 +1428,12 @@ Return
 ; -----------------------------------------------------------------------------
 ShowWindow:
     PrintSub("ShowWindow")
-    Gui_vx := GuiCenterX()
-    Gui, 1: Show, AutoSize x%Gui_vx% y%GuiY%, AltTabAlternative
+
+    Gui_vx := GuiCenterX(MouseMonitorNo)
+    Gui_vy := GuiCenterY(MouseMonitorNo)
+    PrintKV("Gui_vx", Gui_vx)
+    PrintKV("Gui_vy", Gui_vy)        
+    Gui, 1: Show, AutoSize x%Gui_vx% y%Gui_vy% w%WindowWidth%, AltTabAlternative
     LV_Modify(SelectedRowNumber, "Select Vis Focus") ; Get selected row and ensure selection & focus is visible
     DisplayListShown = 1
 Return
@@ -2085,11 +2091,10 @@ AltTabAlternativeDestroy:
 Return
     
 ; -----------------------------------------------------------------------------
-; Returns the screen center X
+; Returns the monitor No of the mouse
 ; -----------------------------------------------------------------------------
-GuiCenterX()
+MouseGetMonitor()
 {
-    Global WindowWidth
     Coordmode, Mouse, Screen
     MouseGetPos, x, y
     SysGet, m, MonitorCount
@@ -2099,11 +2104,51 @@ GuiCenterX()
         SysGet, Mon, Monitor, %A_Index%
         if (x >= MonLeft && x <= MonRight && y >= MonTop && y <= MonBottom)
         {
-            return (0.5 * (MonRight - MonLeft) + MonLeft - WindowWidth / 2)
+            PrintKV("MouseMonitor", A_Index)        
+            return (A_Index)
         }
     }
 }
 
+; -----------------------------------------------------------------------------
+; Returns the screen center X
+; -----------------------------------------------------------------------------
+GuiCenterX(MonitorNo)
+{
+    Global WindowWidth
+    Coordmode, Mouse, Screen
+    MouseGetPos, x, y
+    ; SysGet, m, MonitorCount
+    ; Iterate through all monitors.
+    ; Loop, %m%
+    {   ; Check if the window is on this monitor.
+        SysGet, Mon, Monitor, %MonitorNo%
+        ; if (x >= MonLeft && x <= MonRight && y >= MonTop && y <= MonBottom)
+        ; {
+            return (0.5 * (MonRight - MonLeft) + MonLeft - WindowWidth / 2)
+        ; }
+    }
+}
+    
+; -----------------------------------------------------------------------------
+; Returns the screen center Y
+; -----------------------------------------------------------------------------
+GuiCenterY(MonitorNo)
+{
+    Global WindowHeightMax
+    Coordmode, Mouse, Screen
+    MouseGetPos, x, y
+    ; SysGet, m, MonitorCount
+    ; Iterate through all monitors.
+    ; Loop, %m%
+    {   ; Check if the window is on this monitor.
+        SysGet, Mon, Monitor, %MonitorNo%
+        ; if (x >= MonLeft && x <= MonRight && y >= MonTop && y <= MonBottom)
+        ; {
+            return (0.5 * (MonBottom - MonTop) + MonTop - WindowHeightMax / 2)
+        ; }
+    }
+}
 
 ; -----------------------------------------------------------------------------
 ; Store the windowID, Process Name/Path/ID and etc of the given WindowID.
